@@ -1,15 +1,33 @@
-# GCPIAMCustomRolePermissionsConstraintV2
 #
-# Custom rego policy to determine if a terraform plan wants to create an invalid
-# custom IAM role in GCP. The input data is specified as follows:
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# GCPIAMCustomRolePermissionsConstraintV2 - Raw Rego with Proprietary Input
+# Format
+#
+# What it is: 
+# 	Custom rego policy to determine if a terraform plan wants to create an 
+#	invalid custom IAM role in GCP. The input data is specified as follows:
 #
 # There are two main fields: "constraint" and "asset." The constraint is the 
 # JSON-ified constraint.yaml that speficies what to look for in the terraform
 # plan. The constraint is the entire output of the terraform plan step. We're 
 # interested in the array of resource changes where we'll take our constraint 
 # and identify any problems with the intended changes. YES, this isn't how it
-# is supposed to work in the field, but it's a way to test raw OPA validation vs.
-# the broken state of gcloud terraform vet.
+# is supposed to work in the field, but it's a way to test raw OPA validation 
+# vs. the broken state of gcloud terraform vet, where it looks at cloud resource
+# manager in the preexisting project or organization node.
 
 package templates.gcp.iam_custom_role_permissions
 
@@ -21,7 +39,6 @@ import input
 
 # Check if custom role grants unwanted permissions
 deny[{
-	"debug": debug,
 	"msg": message,
 	"details": metadata,
 }] {
@@ -37,32 +54,29 @@ deny[{
 	resource_changes.mode == "managed"
 	resource_changes.type == "google_project_iam_custom_role"
 
-	# Asset permissions is an array in JSON, we need to make a set.
+	# Permissions are arrays in JSON, we need to make a set.
 	asset_permissions := {x | x := resource_changes.change.after.permissions[_]}
 	params_permissions := {x | x := config_pattern(params.permissions[_])}
 
 	# Grab title of asset (name of new role, in this case)
-	asset_title := resource_changes.name
+	asset_title := get_default(resource_changes, "name", "<NO_RESOURCE_NAME>")
 
 	# Get mode (allowlist or denylist, currently only denylist works)
 	mode := get_default(params, "mode", "allowlist")
 
-	# Grab intersect from constraint permissions and tfplan permissions
-	matches_found = asset_permissions & params_permissions
+	# Find violating permissions, depending on the mode of the constraint
+	get_violations(mode, asset_permissions, params_permissions, violations_found)
 
-	# Looking for a desired count of 0 (no conflicting deny permissions)
-	target_match_count(mode, desired_count)
-	count(matches_found) != desired_count
+	# With get_violations() we can determine the outliers of both deny and allow modes
+	# Deny if there are any violations
+	count(violations_found) > 0
 
-	# Debug statement to show which permission(s) caused the deny ruling
-	debug := sprintf("matches_found %v", [matches_found])
-
-	# Give user a message
-	message := sprintf("Role %v grants permission %v", [asset_title, matches_found])
+	# Give user a message if deny rule is triggered
+	message := sprintf("Role %v grants unwanted permission(s): %v", [asset_title, violations_found])
 	metadata := {
-		"resource": resource_changes.type,
+		"resource_type": resource_changes.type,
 		"role_title": asset_title,
-		"permission": asset_permissions,
+		"permissions_in_violation": violations_found,
 	}
 }
 
@@ -70,13 +84,18 @@ deny[{
 # Rule Utilities
 ###########################
 
-# Determine the overlap between matches under test and constraint
-target_match_count(mode) = 0 {
+# Get violations found, depending on the mode of the constraint
+get_violations(mode, asset_permissions, params_permissions) = output {
+	# Grab intersect from constraint permissions and tfplan permissions if denylist
 	mode == "denylist"
+	output = asset_permissions & params_permissions
 }
 
-target_match_count(mode) = 1 {
+get_violations(mode, asset_permissions, params_permissions) = output {
+	# Grab permission(s) that fall outside of allowed permissions list
+	# ie. the permissions in tfplan that are not in allowlist
 	mode == "allowlist"
+	output := asset_permissions - params_permissions
 }
 
 # If the member in constraint is written as a single "*", turn it into super
