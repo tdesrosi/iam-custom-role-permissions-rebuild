@@ -1,0 +1,148 @@
+{
+    "constraint": {
+        "apiVersion": "constraints.gatekeeper.sh/v1alpha1",
+        "kind": "GCPIAMCustomRolePermissionsConstraintV1",
+        "metadata": {
+            "name": "denylist_custom_role_permissions",
+            "annotations": {
+                "description": "Custom IAM roles must never have the following permissions."
+            }
+        },
+        "spec": {
+            "severity": "high",
+            "parameters": {
+                "mode": "denylist",
+                "title": "Deny highly privileged permissions for custom roles",
+                "permissions": [
+                    "bigquery.datasets.get",
+                    "bigquery.tables.create",
+                    "iam.roles.create"
+                ]
+            }
+        }
+    },
+    "asset": {
+        "format_version": "1.1",
+        "terraform_version": "1.3.3",
+        "planned_values": {
+            "root_module": {
+                "resources": [
+                    {
+                        "address": "google_project_iam_custom_role.my-custom-role",
+                        "mode": "managed",
+                        "type": "google_project_iam_custom_role",
+                        "name": "my-custom-role",
+                        "provider_name": "registry.terraform.io/hashicorp/google",
+                        "schema_version": 0,
+                        "values": {
+                            "description": "A description",
+                            "permissions": [
+                                "iam.roles.create",
+                                "iam.roles.delete",
+                                "iam.roles.list"
+                            ],
+                            "project": "w-secteam-target-prod",
+                            "role_id": "myCustomRole",
+                            "stage": "GA",
+                            "title": "My Custom Role"
+                        },
+                        "sensitive_values": {
+                            "permissions": [
+                                false,
+                                false,
+                                false
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "resource_changes": [
+            {
+                "address": "google_project_iam_custom_role.my-custom-role",
+                "mode": "managed",
+                "type": "google_project_iam_custom_role",
+                "name": "my-custom-role",
+                "provider_name": "registry.terraform.io/hashicorp/google",
+                "change": {
+                    "actions": [
+                        "create"
+                    ],
+                    "before": null,
+                    "after": {
+                        "description": "A description",
+                        "permissions": [
+                            "iam.roles.create",
+                            "iam.roles.delete",
+                            "iam.roles.list"
+                        ],
+                        "project": "w-secteam-target-prod",
+                        "role_id": "myCustomRole",
+                        "stage": "GA",
+                        "title": "My Custom Role"
+                    },
+                    "after_unknown": {
+                        "deleted": true,
+                        "id": true,
+                        "name": true,
+                        "permissions": [
+                            false,
+                            false,
+                            false
+                        ]
+                    },
+                    "before_sensitive": false,
+                    "after_sensitive": {
+                        "permissions": [
+                            false,
+                            false,
+                            false
+                        ]
+                    }
+                }
+            }
+        ],
+        "configuration": {
+            "provider_config": {
+                "google": {
+                    "name": "google",
+                    "full_name": "registry.terraform.io/hashicorp/google",
+                    "version_constraint": "~> 3.84"
+                }
+            },
+            "root_module": {
+                "resources": [
+                    {
+                        "address": "google_project_iam_custom_role.my-custom-role",
+                        "mode": "managed",
+                        "type": "google_project_iam_custom_role",
+                        "name": "my-custom-role",
+                        "provider_config_key": "google",
+                        "expressions": {
+                            "description": {
+                                "constant_value": "A description"
+                            },
+                            "permissions": {
+                                "constant_value": [
+                                    "iam.roles.list",
+                                    "iam.roles.create",
+                                    "iam.roles.delete"
+                                ]
+                            },
+                            "project": {
+                                "constant_value": "w-secteam-target-prod"
+                            },
+                            "role_id": {
+                                "constant_value": "myCustomRole"
+                            },
+                            "title": {
+                                "constant_value": "My Custom Role"
+                            }
+                        },
+                        "schema_version": 0
+                    }
+                ]
+            }
+        }
+    }
+}
