@@ -95,7 +95,7 @@ get_violations(mode, asset_permissions, params_permissions) = output {
 	# Grab permission(s) that fall outside of allowed permissions list
 	# ie. the permissions in tfplan that are not in allowlist
 	mode == "allowlist"
-	output := asset_permissions - params_permissions
+	output = asset_permissions - params_permissions
 }
 
 # If the member in constraint is written as a single "*", turn it into super
