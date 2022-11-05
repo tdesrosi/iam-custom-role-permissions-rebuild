@@ -57,8 +57,9 @@ This is the tfplan json file that gets created when you use `terraform show` on 
 **I've published a Rego Playground that you can use to play around with the policy [here](https://play.openpolicyagent.org/p/XXthbwaCkY)**
 
 ## Methodology:
-**Currently only the "denylist" mode is functional. I'm going to finish working on the "allowlist" mode soon.**
 
 The policy queries the constraint and the asset for two main sets: what permissions are either allowed or forbidden, and the permissions that terraform intends to create. For the denylist, we look at the intersection between both sets. If there are any overlapping rules, the policy will fail, as terraform plans to create a custom role with a forbidden permission.
 
-I'm not sure what the logic will look like for allow, but the idea there is that the terraform plan permissions must all exist in the set of permitted roles. If there are any deviations, the policy should deny the changes.
+"Allow list" takes the difference between asset and constraint permissions. For instance, the roles in the tfplan asset that do NOT appear in the list of allowed permissions.
+
+The rule fails when any matches are found, regardless of operation mode. The matches found, if any, are the matches that violate the constraint permissions.
