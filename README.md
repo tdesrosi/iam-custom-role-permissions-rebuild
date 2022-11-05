@@ -22,8 +22,8 @@ spec:
     title: "Deny highly privileged permissions for custom roles"
     permissions:
       - "bigquery.datasets.get"
-      - "bigquery.tables.*"
-      - "iam.roles.*"
+      - "bigquery.tables.create"
+      - "iam.roles.create"
 ```
 Becomes this when transformed (I used a simple online yaml-json translator):
 ```
